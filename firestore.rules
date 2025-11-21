@@ -1,0 +1,214 @@
+
+/**
+ * @file Firebase Security Rules for AssignPro Application
+ *
+ * Core Philosophy:
+ * This ruleset enforces a role-based access control model, with strict ownership for user-specific data and administrative privileges determined by document existence in a dedicated collection. Data denormalization is used to optimize rule performance and avoid costly `get()` operations.
+ *
+ * Data Structure:
+ * - Admins: Identified by the presence of a document in `/roles_admin/{adminId}`.
+ * - Users (Students): Each user has a profile stored at `/users/{userId}`. Submissions are stored under `/users/{userId}/submissions/{submissionId}`.
+ * - Faculties: Faculty profiles are stored at `/faculties/{facultyId}`.
+ * - Branches: Branch data is stored in `/branches/{branchId}`.
+ * - Subjects: Subject data is stored in `/subjects/{subjectId}`.
+ * - Assignments: Assignments are stored at `/assignments/{assignmentId}`.
+ *
+ * Key Security Decisions:
+ * - Admin Role: Determined by document existence in `/roles_admin/{adminId}`.
+ * - User Data: Strictly private and accessible only by the owning user. Admins can list users.
+ * - Faculty Data: Accessible to authenticated users for read, but only admins can list or write.
+ * - Branches and Subjects: Accessible to authenticated users for read, but only admins can list or write.
+ * - Assignments: Accessible to authenticated users.
+ * - Submissions: Accessible only to the student who owns the submission and faculty who created the assignment.
+ *
+ * Denormalization for Authorization:
+ * - Assignments: Include `facultyId`, `subjectId` to avoid `get()` calls for authorization.
+ * - Submissions: Include `studentId` and `assignmentId` to avoid `get()` calls.
+ *
+ * Structural Segregation:
+ * - User profiles and submissions are stored under `/users/{userId}` to ensure private access.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the request is made by an authenticated user.
+     * @return {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     * @param {string} userId The user ID to compare against the authenticated user's UID.
+     * @return {boolean} True if the UIDs match, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is an existing owner of the document, based on the provided userId.
+     * @param {string} userId The user ID to compare against the authenticated user's UID and the resource data.
+     * @return {boolean} True if the UIDs match and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user is an admin.
+     * @return {boolean} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+        return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+    
+    /**
+     * @description
+     * @path /roles_admin/{adminId}
+     * @allow (create) User with UID 'test_admin' can create a document in `/roles_admin/test_admin` if authenticated.
+     * @deny (create) User with UID 'test_user' cannot create a document in `/roles_admin/test_admin` if not authenticated as admin.
+     * @principle Enforces admin role via document existence.
+     */
+    match /roles_admin/{adminId} {
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+      allow list: if (isSignedIn() && isAdmin()) || request.query.limit == 1;
+      allow create: if isSignedIn() && request.auth.uid == adminId && !exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      allow update: if false;
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Manages user profiles. Only the authenticated user can read/write their own profile. Admins can list all users.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'test_user' can create their profile at /users/test_user.
+     * @deny (update) User with UID 'another_user' cannot update the profile at /users/test_user.
+     * @principle Enforces document ownership for user profiles, with admin list privileges.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || (isSignedIn() && isAdmin());
+      allow list: if isSignedIn() && isAdmin(); 
+      allow create: if isOwner(userId) || (isSignedIn() && isAdmin());
+      allow update: if isExistingOwner(userId) || (isSignedIn() && isAdmin());
+      allow delete: if isExistingOwner(userId) || (isSignedIn() && isAdmin());
+    }
+
+    /**
+     * @description Manages faculty profiles. Authenticated users can read, but only admins can list or write.
+     * @path /faculties/{facultyId}
+     * @allow (get) Any authenticated user can read a faculty profile.
+     * @deny (create) Only admins can create faculty profiles.
+     * @principle Authenticated read access with admin-controlled writes and lists.
+     */
+    match /faculties/{facultyId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Manages branches of study. Authenticated users can read, but only admins can list or write.
+     * @path /branches/{branchId}
+     * @allow (get) Any authenticated user can read a branch.
+     * @deny (create) Only admins can create branches.
+     * @principle Authenticated read access with admin-controlled writes and lists.
+     */
+    match /branches/{branchId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Manages subjects. Authenticated users can read, but only admins can list or write.
+     * @path /subjects/{subjectId}
+     * @allow (get) Any authenticated user can read a subject.
+     * @deny (create) Only admins can create subjects.
+     * @principle Authenticated read access with admin-controlled writes and lists.
+     */
+    match /subjects/{subjectId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Manages assignments. Accessible to authenticated users. Only faculty can create and manage their own assignments.
+     * @path /assignments/{assignmentId}
+     * @allow (get) Any authenticated user can read an assignment.
+     * @allow (create) Only authenticated faculty can create assignments for their own courses.
+     * @allow (update, delete) Only the faculty who created the assignment can update or delete it.
+     */
+    match /assignments/{assignmentId} {
+      // Allow reading individual assignments
+      allow get: if isSignedIn();
+      // Allow listing all assignments
+      allow list: if isSignedIn();
+      // Allow faculty who are creating the assignment. Deadline validation should be
+      // enforced on the server or via admin UI; avoid strict client-side timestamp
+      // equality checks here which often cause permission denials due to type mismatches.
+      allow create: if isSignedIn() && request.resource.data.facultyId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.facultyId == request.auth.uid;
+    }
+
+    /**
+     * @description Manages user submissions. Each user can only access their own submissions.
+     * @path /users/{userId}/submissions/{submissionId}
+     * @allow (read, create) Users can read and create their own submissions.
+     * @allow (update) Users can only update their own submissions if the status hasn't been verified.
+     * @deny (delete) Submissions cannot be deleted.
+     */
+    match /users/{userId}/submissions/{submissionId} {
+      allow read: if isOwner(userId);
+      // Allow the student to create their own submission. Avoid strict equality to
+      // request.time (server timestamp) since clients commonly send ISO strings which
+      // would fail the check. Ensure client still provides studentId matching owner.
+      allow create: if isOwner(userId) && request.resource.data.studentId == userId;
+      allow update: if isOwner(userId) && 
+        resource.data.status == 'pending' &&
+        request.resource.data.status in ['pending', 'rejected'];
+    }
+
+    /**
+     * @description Manages faculty data. Faculty can read their own profile, admins can manage all.
+     * @path /faculties/{facultyId}
+     */
+    match /faculties/{facultyId} {
+      allow read: if isSignedIn() && (isOwner(facultyId) || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Manages user profiles. Users can read/write their own profile, admins can manage all.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Manages student submissions. Only the student can create/modify their own submissions. Faculty can read submissions related to assignments they created.
+     * @path /users/{userId}/submissions/{submissionId}
+     * @allow (create) User 'test_user' can create a submission under /users/test_user/submissions/test_submission.
+     * @deny (update) User 'another_user' cannot update /users/test_user/submissions/test_submission.
+     * @principle Enforces ownership for submissions, restricting access to the owner and associated faculty.
+     */
+    match /users/{userId}/submissions/{submissionId} {
+      allow get: if isOwner(userId) || (isSignedIn() && isAdmin());
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

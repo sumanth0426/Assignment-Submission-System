@@ -1,0 +1,395 @@
+{
+  "entities": {
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents an administrator user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Admin entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the administrator."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the administrator."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the administrator.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email"
+      ]
+    },
+    "Faculty": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Faculty",
+      "type": "object",
+      "description": "Represents a faculty member.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Faculty entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the faculty member."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the faculty member."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the faculty member.",
+          "format": "email"
+        },
+        "assignedBranchIds": {
+          "type": "array",
+          "description": "References to Branches assigned to the faculty. (Relationship: Faculty 1:N Branch)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assignedSubjectIds": {
+          "type": "array",
+          "description": "References to Subjects assigned to the faculty. (Relationship: Faculty 1:N Subject)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email"
+      ]
+    },
+    "Student": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Student",
+      "type": "object",
+      "description": "Represents a student.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Student entity."
+        },
+        "rollNumber": {
+          "type": "string",
+          "description": "The roll number of the student."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the student."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the student."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the student.",
+          "format": "email"
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Reference to the Branch the student belongs to. (Relationship: Branch 1:N Student)"
+        },
+        "year": {
+          "type": "number",
+          "description": "The academic year the student is in."
+        },
+        "semester": {
+          "type": "number",
+          "description": "The semester the student is in."
+        },
+        "section": {
+          "type": "string",
+          "description": "The section the student belongs to."
+        }
+      },
+      "required": [
+        "id",
+        "rollNumber",
+        "firstName",
+        "lastName",
+        "email",
+        "branchId",
+        "year",
+        "semester",
+        "section"
+      ]
+    },
+    "Branch": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Branch",
+      "type": "object",
+      "description": "Represents a branch of study.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Branch entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the branch."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Subject": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subject",
+      "type": "object",
+      "description": "Represents a subject.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Subject entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the subject."
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Reference to the Branch the subject belongs to. (Relationship: Branch 1:N Subject)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "branchId"
+      ]
+    },
+    "Assignment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Assignment",
+      "type": "object",
+      "description": "Represents an assignment.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Assignment entity."
+        },
+        "facultyId": {
+          "type": "string",
+          "description": "Reference to the Faculty who created the assignment. (Relationship: Faculty 1:N Assignment)"
+        },
+        "subjectId": {
+          "type": "string",
+          "description": "Reference to the Subject the assignment is for. (Relationship: Subject 1:N Assignment)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the assignment."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the assignment."
+        },
+        "deadline": {
+          "type": "string",
+          "description": "The deadline for the assignment.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "facultyId",
+        "subjectId",
+        "title",
+        "description",
+        "deadline"
+      ]
+    },
+    "Submission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Submission",
+      "type": "object",
+      "description": "Represents a student's submission for an assignment.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Submission entity."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the Student who submitted the assignment. (Relationship: Student 1:N Submission)"
+        },
+        "assignmentId": {
+          "type": "string",
+          "description": "Reference to the Assignment that was submitted. (Relationship: Assignment 1:N Submission)"
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "The date and time the assignment was submitted.",
+          "format": "date-time"
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "The URL of the submitted file (PDF).",
+          "format": "uri"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the submission (pending, verified, rejected)."
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Remarks from the faculty regarding the submission."
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "assignmentId",
+        "submissionDate",
+        "fileUrl",
+        "status"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/roles_admin/{adminId}",
+        "definition": {
+          "entityName": "Admin",
+          "schema": {
+            "$ref": "#/backend/entities/Admin"
+          },
+          "description": "Collection to store admin role. Document existence signifies admin role. (DBAC - Existence over Content).",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The Firebase UID of the administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "user",
+          "schema": {
+            "$ref": "#/backend/entities/Student"
+          },
+          "description": "Base collection for user profiles.  Student profile data. All data under `/users/{userId}` is private to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/faculties/{facultyId}",
+        "definition": {
+          "entityName": "Faculty",
+          "schema": {
+            "$ref": "#/backend/entities/Faculty"
+          },
+          "description": "Collection for faculty profiles.",
+          "params": [
+            {
+              "name": "facultyId",
+              "description": "The unique identifier of the faculty member."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/branches/{branchId}",
+        "definition": {
+          "entityName": "Branch",
+          "schema": {
+            "$ref": "#/backend/entities/Branch"
+          },
+          "description": "Collection for branches of study.",
+          "params": [
+            {
+              "name": "branchId",
+              "description": "The unique identifier of the branch."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/subjects/{subjectId}",
+        "definition": {
+          "entityName": "Subject",
+          "schema": {
+            "$ref": "#/backend/entities/Subject"
+          },
+          "description": "Collection for subjects.",
+          "params": [
+            {
+              "name": "subjectId",
+              "description": "The unique identifier of the subject."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/assignments/{assignmentId}",
+        "definition": {
+          "entityName": "Assignment",
+          "schema": {
+            "$ref": "#/backend/entities/Assignment"
+          },
+          "description": "Collection for assignments. Includes denormalized `facultyId`, `subjectId` and `branchId` from parent entities for authorization independence.",
+          "params": [
+            {
+              "name": "assignmentId",
+              "description": "The unique identifier of the assignment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/submissions/{submissionId}",
+        "definition": {
+          "entityName": "Submission",
+          "schema": {
+            "$ref": "#/backend/entities/Submission"
+          },
+          "description": "Subcollection for submissions, nested under the student document. Includes denormalized `assignmentId` and `studentId` for authorization independence. Only accessible by students and faculty for the specific assignment.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase UID of the student."
+            },
+            {
+              "name": "submissionId",
+              "description": "The unique identifier of the submission."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the requirements of the AssignPro application, focusing on assignment submission, user roles (Admin, Faculty, Student), and data relationships. The structure emphasizes authorization independence and efficient data retrieval.  \n\n**Authorization Independence (Denormalization):**\nTo avoid using `get()` calls in security rules and enable atomic operations, authorization data is denormalized. Specifically, access control information, like branch assignments for faculty or subject assignments for students, will be duplicated in documents where those assignments need to be checked.\n\n**Structural Segregation (Homogeneous Security Posture):**\nData with different access needs is separated into different collections.  For example, faculty-created assignments are stored separately from student submissions, allowing for distinct security rules for each.\n\n**Access Modeling (Standardization and Consistency):**\n*   User profiles (Admin, Faculty, Student) are stored in dedicated collections. Admin roles are managed via document existence in the `/roles_admin/{uid}` collection.\n*   Assignments are created by Faculty and associated with Subjects. The association between Faculty, Subject, and Branch is maintained to determine student access. The `facultyId`, `subjectId` and `branchId` are denormalized into the assignment document. The student assignments are under users/{userid}/assignments/{assignmentId} for securing the student data. \n*   Student submissions are stored as subcollections of assignments, linked to both the assignment and the student.  This allows easy querying of submissions for a particular assignment by faculty.\n\n**QAPs (Rules are not Filters):**\n*   The structure allows secure `list` operations.  Faculty can list all assignments they have created in their faculty doc, and students can only see assignments in their student doc, according to their roles and assignments. This is ensured by segregating assignment data and using path-based ownership where possible.\n\nIn general, all private data is under `/users/{userId}`.\n"
+  }
+}
